@@ -20,9 +20,23 @@
 		"type": "node22",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
-		"entrypoint": "../main.js"
+		"entrypoint": "../src/main.js"
 	},
 	"legacyIds": [],
-	"products": ["VX61XL", "V60", "VX60ASL", "VX61ASL", "VX61BASL", "VX751BA", "VX752A", "V60XL", "V61XL", "V63XL", "V60XS", "V61XS", "V63XS"],
+	"products": [
+		"VX61XL",
+		"V60",
+		"VX60ASL",
+		"VX61ASL",
+		"VX61BASL",
+		"VX751BA",
+		"VX752A",
+		"V60XL",
+		"V61XL",
+		"V63XL",
+		"V60XS",
+		"V61XS",
+		"V63XS"
+	],
 	"keywords": ["ptz", "camera", "visca", "vhd", "vx61xl", "v60", "v61xl"]
 }

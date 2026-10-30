@@ -52,7 +52,7 @@ Once released, add the module from Companion's **Connections** page
 ```
 corepack enable
 yarn install
-yarn companion-module-build   # via @companion-module/tools, produces the .tgz package
+yarn package   # via @companion-module/tools, produces the .tgz package
 ```
 
 This repository uses yarn; don't commit a `package-lock.json`.

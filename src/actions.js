@@ -34,17 +34,17 @@ function getActionDefinitions(instance) {
 		},
 	})
 
-	const numberAction = (name, prefixBytes, min, max, def, nibbleCount) => ({
+	const numberAction = (name, prefixBytes, min, max, def, nibbleCount, note) => ({
 		name,
-		options: [{ id: 'value', type: 'number', label: name, min, max, default: def, range: false }],
+		options: [{ id: 'value', type: 'number', label: 'Value', description: note, min, max, default: def, range: false }],
 		callback: (event) => {
 			send([...prefixBytes, ...nibbleBytes(Number(event.options.value), nibbleCount)])
 		},
 	})
 
-	const byteAction = (name, prefixBytes, min, max, def) => ({
+	const byteAction = (name, prefixBytes, min, max, def, note) => ({
 		name,
-		options: [{ id: 'value', type: 'number', label: name, min, max, default: def, range: false }],
+		options: [{ id: 'value', type: 'number', label: 'Value', description: note, min, max, default: def, range: false }],
 		callback: (event) => {
 			send([...prefixBytes, Number(event.options.value) & 0xff])
 		},
@@ -71,7 +71,7 @@ function getActionDefinitions(instance) {
 
 	// ---------- SYSTEM ----------
 	actions.address_set_broadcast = {
-		name: 'Address Set (broadcast, 88 30 01 FF)',
+		name: 'Address Set (broadcast)',
 		options: [],
 		callback: () => sendRaw([0x88, 0x30, 0x01]),
 	}
@@ -123,31 +123,51 @@ function getActionDefinitions(instance) {
 	actions.focus_mode_auto = simple('Focus: Auto', [0x01, 0x04, 0x38, 0x02])
 	actions.focus_mode_manual = simple('Focus: Manual', [0x01, 0x04, 0x38, 0x03])
 	actions.focus_mode_toggle = simple('Focus: Auto/Manual Toggle', [0x01, 0x04, 0x38, 0x10])
-	actions.af_sense = choiceAction('Focus: AF Sensitivity', [0x01, 0x04, 0x58], [
-		{ id: '1', label: 'High' },
-		{ id: '2', label: 'Normal' },
-		{ id: '3', label: 'Low' },
-	], '2')
-	actions.af_zone = choiceAction('Focus: AF Zone', [0x01, 0x04, 0xaa], [
-		{ id: '0', label: 'Top' },
-		{ id: '1', label: 'Center' },
-		{ id: '2', label: 'Bottom' },
-	], '1')
-	actions.awb_sensitivity = choiceAction('AWB Sensitivity', [0x01, 0x04, 0xa9], [
-		{ id: '0', label: 'High' },
-		{ id: '1', label: 'Normal' },
-		{ id: '2', label: 'Low' },
-	], '1')
+	actions.af_sense = choiceAction(
+		'Focus: AF Sensitivity',
+		[0x01, 0x04, 0x58],
+		[
+			{ id: '1', label: 'High' },
+			{ id: '2', label: 'Normal' },
+			{ id: '3', label: 'Low' },
+		],
+		'2',
+	)
+	actions.af_zone = choiceAction(
+		'Focus: AF Zone',
+		[0x01, 0x04, 0xaa],
+		[
+			{ id: '0', label: 'Top' },
+			{ id: '1', label: 'Center' },
+			{ id: '2', label: 'Bottom' },
+		],
+		'1',
+	)
+	actions.awb_sensitivity = choiceAction(
+		'AWB Sensitivity',
+		[0x01, 0x04, 0xa9],
+		[
+			{ id: '0', label: 'High' },
+			{ id: '1', label: 'Normal' },
+			{ id: '2', label: 'Low' },
+		],
+		'1',
+	)
 
 	// ---------- WHITE BALANCE / COLOR TEMPERATURE ----------
-	actions.wb_mode = choiceAction('White Balance Mode', [0x01, 0x04, 0x35], [
-		{ id: '00', label: 'Auto' },
-		{ id: '01', label: 'Indoor' },
-		{ id: '02', label: 'Outdoor' },
-		{ id: '03', label: 'One Push' },
-		{ id: '05', label: 'Manual' },
-		{ id: '20', label: 'VAR (color temperature)' },
-	], '00')
+	actions.wb_mode = choiceAction(
+		'White Balance Mode',
+		[0x01, 0x04, 0x35],
+		[
+			{ id: '00', label: 'Auto' },
+			{ id: '01', label: 'Indoor' },
+			{ id: '02', label: 'Outdoor' },
+			{ id: '03', label: 'One Push' },
+			{ id: '05', label: 'Manual' },
+			{ id: '20', label: 'VAR (color temperature)' },
+		],
+		'00',
+	)
 	actions.onepush_wb_trigger = simple('One-push White Balance Trigger', [0x01, 0x04, 0x10, 0x05])
 	actions.colortemp_up = simple('Color Temperature Up', [0x01, 0x04, 0x20, 0x02])
 	actions.colortemp_down = simple('Color Temperature Down', [0x01, 0x04, 0x20, 0x03])
@@ -155,108 +175,196 @@ function getActionDefinitions(instance) {
 	// V60 table: direct is a single raw byte (8x 01 04 20 00 xx FF), NOT the
 	// 2-nibble encoding used on the VX-90 — exact index-to-Kelvin mapping is
 	// not documented for this camera family, only that a raw byte 0-255 is sent.
-	actions.colortemp_direct = byteAction('Color Temperature (raw index, 0-255, mapping not documented for this model)', [0x01, 0x04, 0x20, 0x00], 0, 255, 0)
+	actions.colortemp_direct = byteAction(
+		'Color Temperature',
+		[0x01, 0x04, 0x20, 0x00],
+		0,
+		255,
+		0,
+		'Raw index 0-255. The index-to-Kelvin mapping is not documented for this camera family.',
+	)
 
 	// ---------- GAIN / R-GAIN / B-GAIN ----------
 	// V60 table: direct is 2 nibble-bytes (pq) after a 5-byte prefix — finer
 	// than the VX-90's single-nibble (0-10) encoding of the same command.
-	actions.gain_direct = numberAction('Gain (0-255, finer table on this model)', [0x01, 0x04, 0x0c, 0x00, 0x00], 0, 255, 0, 2)
+	actions.gain_direct = numberAction(
+		'Gain',
+		[0x01, 0x04, 0x0c, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (finer table on this camera family than on the VX-90)',
+	)
 	actions.gain_reset = simple('Gain Reset', [0x01, 0x04, 0x0c, 0x00])
 	actions.gain_up = simple('Gain Up', [0x01, 0x04, 0x0c, 0x02])
 	actions.gain_down = simple('Gain Down', [0x01, 0x04, 0x0c, 0x03])
-	actions.gain_limit_direct = numberAction('Gain Limit (0-10)', [0x01, 0x04, 0x2c], 0, 10, 10, 1)
+	actions.gain_limit_direct = numberAction('Gain Limit', [0x01, 0x04, 0x2c], 0, 10, 10, 1, '0-10')
 	actions.gain_limit_reset = simple('Gain Limit Reset', [0x0a, 0x11, 0x24, 0x00])
 	actions.gain_limit_up = simple('Gain Limit Up', [0x0a, 0x11, 0x24, 0x02])
 	actions.gain_limit_down = simple('Gain Limit Down', [0x0a, 0x11, 0x24, 0x03])
-	actions.r_gain_direct = numberAction('R Gain (0-255)', [0x01, 0x04, 0x43, 0x00, 0x00], 0, 255, 128, 2)
+	actions.r_gain_direct = numberAction('R Gain', [0x01, 0x04, 0x43, 0x00, 0x00], 0, 255, 128, 2, '0-255')
 	actions.r_gain_reset = simple('R Gain Reset', [0x01, 0x04, 0x03, 0x00])
 	actions.r_gain_up = simple('R Gain Up', [0x01, 0x04, 0x03, 0x02])
 	actions.r_gain_down = simple('R Gain Down', [0x01, 0x04, 0x03, 0x03])
-	actions.b_gain_direct = numberAction('B Gain (0-255)', [0x01, 0x04, 0x44, 0x00, 0x00], 0, 255, 128, 2)
+	actions.b_gain_direct = numberAction('B Gain', [0x01, 0x04, 0x44, 0x00, 0x00], 0, 255, 128, 2, '0-255')
 	actions.b_gain_reset = simple('B Gain Reset', [0x01, 0x04, 0x04, 0x00])
 	actions.b_gain_up = simple('B Gain Up', [0x01, 0x04, 0x04, 0x02])
 	actions.b_gain_down = simple('B Gain Down', [0x01, 0x04, 0x04, 0x03])
 
 	// ---------- EXPOSURE ----------
-	actions.exposure_mode = choiceAction('Exposure: Mode', [0x01, 0x04, 0x39], [
-		{ id: '0', label: 'Full Auto' },
-		{ id: '3', label: 'Manual' },
-		{ id: 'a', label: 'Shutter priority (SAE)' },
-		{ id: 'b', label: 'Iris priority (AAE)' },
-		{ id: 'd', label: 'Bright' },
-	], '0')
-	actions.metering_mode = choiceAction('Metering Mode', [0x01, 0x04, 0x3a], [
-		{ id: '0', label: 'Average' },
-		{ id: '1', label: 'Center-weighted' },
-		{ id: '2', label: 'Smart' },
-		{ id: '3', label: 'Top' },
-	], '0')
-	actions.shutter_direct = numberAction('Shutter Position (0-17)', [0x01, 0x04, 0x4a, 0x00, 0x00], 0, 0x11, 0, 2)
+	actions.exposure_mode = choiceAction(
+		'Exposure: Mode',
+		[0x01, 0x04, 0x39],
+		[
+			{ id: '0', label: 'Full Auto' },
+			{ id: '3', label: 'Manual' },
+			{ id: 'a', label: 'Shutter priority (SAE)' },
+			{ id: 'b', label: 'Iris priority (AAE)' },
+			{ id: 'd', label: 'Bright' },
+		],
+		'0',
+	)
+	actions.metering_mode = choiceAction(
+		'Metering Mode',
+		[0x01, 0x04, 0x3a],
+		[
+			{ id: '0', label: 'Average' },
+			{ id: '1', label: 'Center-weighted' },
+			{ id: '2', label: 'Smart' },
+			{ id: '3', label: 'Top' },
+		],
+		'0',
+	)
+	actions.shutter_direct = numberAction('Shutter Position', [0x01, 0x04, 0x4a, 0x00, 0x00], 0, 0x11, 0, 2, '0-17')
 	actions.shutter_reset = simple('Shutter Reset', [0x01, 0x04, 0x0a, 0x00])
 	actions.shutter_up = simple('Shutter Up', [0x01, 0x04, 0x0a, 0x02])
 	actions.shutter_down = simple('Shutter Down', [0x01, 0x04, 0x0a, 0x03])
-	actions.iris_direct = numberAction('Iris Position (0-255)', [0x01, 0x04, 0x4b, 0x00, 0x00], 0, 255, 0, 2)
+	actions.iris_direct = numberAction('Iris Position', [0x01, 0x04, 0x4b, 0x00, 0x00], 0, 255, 0, 2, '0-255')
 	actions.iris_reset = simple('Iris Reset', [0x01, 0x04, 0x0b, 0x00])
 	actions.iris_up = simple('Iris Up (open)', [0x01, 0x04, 0x0b, 0x02])
 	actions.iris_down = simple('Iris Down (close)', [0x01, 0x04, 0x0b, 0x03])
 	actions.exposure_comp_mode = onOff('Exposure: Compensation On/Off', [0x01, 0x04, 0x3e])
-	actions.exposure_comp_reset = simple('Exposure: Compensation Reset', [0x01, 0x04, 0x0e, 0x00])
-	actions.exposure_comp_up = simple('Exposure: Compensation Up', [0x01, 0x04, 0x0e, 0x02])
-	actions.exposure_comp_down = simple('Exposure: Compensation Down', [0x01, 0x04, 0x0e, 0x03])
+	actions.exposure_comp_reset = simple('Exposure Compensation Reset', [0x01, 0x04, 0x0e, 0x00])
+	actions.exposure_comp_up = simple('Exposure Compensation Up', [0x01, 0x04, 0x0e, 0x02])
+	actions.exposure_comp_down = simple('Exposure Compensation Down', [0x01, 0x04, 0x0e, 0x03])
 	// V60 table: direct is 2 nibble-bytes (pq) after a 5-byte prefix.
-	actions.exposure_comp_direct = numberAction('Exposure: Compensation (0-255, raw pq)', [0x01, 0x04, 0x4e, 0x00, 0x00], 0, 255, 0, 2)
+	actions.exposure_comp_direct = numberAction(
+		'Exposure Compensation',
+		[0x01, 0x04, 0x4e, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (raw value)',
+	)
 	actions.backlight = onOff('Backlight Compensation', [0x01, 0x04, 0x33])
-	actions.drc_direct = numberAction('DRC (0-8)', [0x01, 0x04, 0x25, 0x00, 0x00, 0x00], 0, 8, 0, 1)
+	actions.drc_direct = numberAction('DRC', [0x01, 0x04, 0x25, 0x00, 0x00, 0x00], 0, 8, 0, 1, '0-8')
 	actions.drc_reset = simple('DRC Reset', [0x01, 0x04, 0x25, 0x00])
 	actions.drc_up = simple('DRC Up', [0x01, 0x04, 0x25, 0x02])
 	actions.drc_down = simple('DRC Down', [0x01, 0x04, 0x25, 0x03])
-	actions.anti_flicker = choiceAction('Anti-Flicker', [0x01, 0x04, 0x23], [
-		{ id: '0', label: 'Off' },
-		{ id: '1', label: '50Hz' },
-		{ id: '2', label: '60Hz' },
-	], '1')
+	actions.anti_flicker = choiceAction(
+		'Anti-Flicker',
+		[0x01, 0x04, 0x23],
+		[
+			{ id: '0', label: 'Off' },
+			{ id: '1', label: '50Hz' },
+			{ id: '2', label: '60Hz' },
+		],
+		'1',
+	)
 
 	// ---------- IMAGE ----------
 	// V60 table: Brightness/Contrast direct are 2 nibble-bytes (pq) after a
 	// 5-byte prefix — the VX-90 uses a single-nibble (0-14) encoding instead.
-	actions.brightness_direct = numberAction('Brightness (0-255, finer table on this model)', [0x01, 0x04, 0xa1, 0x00, 0x00], 0, 255, 0, 2)
-	actions.contrast_direct = numberAction('Contrast (0-255, finer table on this model)', [0x01, 0x04, 0xa2, 0x00, 0x00], 0, 255, 0, 2)
+	actions.brightness_direct = numberAction(
+		'Brightness',
+		[0x01, 0x04, 0xa1, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (finer table on this camera family than on the VX-90)',
+	)
+	actions.contrast_direct = numberAction(
+		'Contrast',
+		[0x01, 0x04, 0xa2, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (finer table on this camera family than on the VX-90)',
+	)
 	// CAM_Bright (separate from CAM_Brightness above) — also 2 nibble-bytes on this model.
-	actions.bright_direct = numberAction('Bright (0-255, finer table on this model)', [0x01, 0x04, 0x0d, 0x00, 0x00], 0, 255, 0, 2)
+	actions.bright_direct = numberAction(
+		'Bright',
+		[0x01, 0x04, 0x0d, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (finer table on this camera family than on the VX-90)',
+	)
 	actions.bright_reset = simple('Bright Reset', [0x01, 0x04, 0x0d, 0x00])
 	actions.bright_up = simple('Bright Up', [0x01, 0x04, 0x0d, 0x02])
 	actions.bright_down = simple('Bright Down', [0x01, 0x04, 0x0d, 0x03])
 	// V60 table: Aperture(Sharpness) direct is also 2 nibble-bytes (pq).
-	actions.sharpness_direct = numberAction('Sharpness/Aperture (0-255, finer table on this model)', [0x01, 0x04, 0x42, 0x00, 0x00], 0, 255, 0, 2)
+	actions.sharpness_direct = numberAction(
+		'Sharpness/Aperture',
+		[0x01, 0x04, 0x42, 0x00, 0x00],
+		0,
+		255,
+		0,
+		2,
+		'0-255 (finer table on this camera family than on the VX-90)',
+	)
 	actions.sharpness_reset = simple('Sharpness Reset', [0x01, 0x04, 0x02, 0x00])
 	actions.sharpness_auto = simple('Sharpness: Auto', [0x01, 0x04, 0x05, 0x02])
 	actions.sharpness_up = simple('Sharpness Up', [0x01, 0x04, 0x02, 0x02])
 	actions.sharpness_down = simple('Sharpness Down', [0x01, 0x04, 0x02, 0x03])
-	actions.saturation = numberAction('Color Gain / Saturation (0-14, 60%-200%)', [0x01, 0x04, 0x49, 0x00, 0x00, 0x00], 0, 14, 7, 1)
+	actions.saturation = numberAction(
+		'Color Gain / Saturation',
+		[0x01, 0x04, 0x49, 0x00, 0x00, 0x00],
+		0,
+		14,
+		7,
+		1,
+		'0-14, 60%-200%',
+	)
 	actions.hue = {
 		name: 'Color Hue (-7..+7 degrees)',
 		options: [{ id: 'value', type: 'number', label: 'Hue', min: -7, max: 7, default: 0 }],
 		callback: (event) => send([0x01, 0x04, 0x4f, 0x00, 0x00, 0x00, ...nibbleBytes(Number(event.options.value) + 7, 1)]),
 	}
 	actions.bw_mode = onOff('Black & White Mode', [0x01, 0x04, 0x63], 0x04, 0x00)
-	actions.flip = choiceAction('Flip (combined)', [0x01, 0x04, 0xa4], [
-		{ id: '0', label: 'Off' },
-		{ id: '1', label: 'Flip-H' },
-		{ id: '2', label: 'Flip-V' },
-		{ id: '3', label: 'Flip-HV' },
-	], '0')
+	actions.flip = choiceAction(
+		'Flip (combined)',
+		[0x01, 0x04, 0xa4],
+		[
+			{ id: '0', label: 'Off' },
+			{ id: '1', label: 'Flip-H' },
+			{ id: '2', label: 'Flip-V' },
+			{ id: '3', label: 'Flip-HV' },
+		],
+		'0',
+	)
 	actions.flip_h = onOff('Horizontal Flip (LR Reverse)', [0x01, 0x04, 0x61])
 	actions.flip_v = onOff('Vertical Flip', [0x01, 0x04, 0x66])
 	// V60 table: 00 PC, 01 0.45, 02 0.5, 03 0.56, 04 0.63, 05 EXT — a
 	// different mapping/order from the VX-90's gamma table.
-	actions.gamma = choiceAction('Gamma', [0x01, 0x04, 0x5b], [
-		{ id: '0', label: 'PC' },
-		{ id: '1', label: '0.45' },
-		{ id: '2', label: '0.5' },
-		{ id: '3', label: '0.56' },
-		{ id: '4', label: '0.63' },
-		{ id: '5', label: 'EXT' },
-	], '0')
+	actions.gamma = choiceAction(
+		'Gamma',
+		[0x01, 0x04, 0x5b],
+		[
+			{ id: '0', label: 'PC' },
+			{ id: '1', label: '0.45' },
+			{ id: '2', label: '0.5' },
+			{ id: '3', label: '0.56' },
+			{ id: '4', label: '0.63' },
+			{ id: '5', label: 'EXT' },
+		],
+		'0',
+	)
 	actions.nr2d_level = {
 		name: 'NR2D Level (0=Off, 1-5)',
 		options: [{ id: 'value', type: 'number', label: 'Level', min: 0, max: 5, default: 0 }],
@@ -353,9 +461,9 @@ function getActionDefinitions(instance) {
 
 	// ---------- PRESET ----------
 	// V60 table documents preset numbers 0-127 (vs. 0-254 on the VX-90).
-	actions.preset_set = byteAction('Preset: Set (0-127)', [0x01, 0x04, 0x3f, 0x01], 0, 127, 0)
-	actions.preset_recall = byteAction('Preset: Recall (0-127)', [0x01, 0x04, 0x3f, 0x02], 0, 127, 0)
-	actions.preset_clear = byteAction('Preset: Clear/Reset (0-127)', [0x01, 0x04, 0x3f, 0x00], 0, 127, 0)
+	actions.preset_set = byteAction('Preset: Set', [0x01, 0x04, 0x3f, 0x01], 0, 127, 0, '0-127')
+	actions.preset_recall = byteAction('Preset: Recall', [0x01, 0x04, 0x3f, 0x02], 0, 127, 0, '0-127')
+	actions.preset_clear = byteAction('Preset: Clear/Reset', [0x01, 0x04, 0x3f, 0x00], 0, 127, 0, '0-127')
 	actions.preset_speed_up = simple('Preset: Recall Speed Up', [0x0a, 0x11, 0x35, 0x02])
 	actions.preset_speed_down = simple('Preset: Recall Speed Down', [0x0a, 0x11, 0x35, 0x03])
 
@@ -381,22 +489,37 @@ function getActionDefinitions(instance) {
 	// ---------- TRACKING (V60 table explicitly lists the VX-90 as a shared
 	// model for these commands, so they should also apply here) ----------
 	actions.track_enable = onOff('Tracking: Enable Human Tracking', [0x0a, 0x11, 0x54])
-	actions.track_target_select = choiceAction('Tracking: Target Selection', [0x0a, 0x11, 0xa3], [
-		{ id: '2', label: 'Left' },
-		{ id: '3', label: 'Right' },
-		{ id: '4', label: 'Confirm' },
-	], '4')
-	actions.track_figure_size = choiceAction('Tracking: Close-up Figure Size', [0x0a, 0x0f, 0x01, 0x00], [
-		{ id: '0', label: 'Full Body' },
-		{ id: '1', label: 'Half Body' },
-		{ id: '2', label: 'Close Up' },
-		{ id: '3', label: 'Custom' },
-	], '0')
-	actions.track_mode = choiceAction('Tracking: Mode', [0x0a, 0x01, 0x04, 0x1c], [
-		{ id: '3', label: 'Tracking' },
-		{ id: '4', label: 'Region' },
-		{ id: '5', label: 'Frame' },
-	], '3')
+	actions.track_target_select = choiceAction(
+		'Tracking: Target Selection',
+		[0x0a, 0x11, 0xa3],
+		[
+			{ id: '2', label: 'Left' },
+			{ id: '3', label: 'Right' },
+			{ id: '4', label: 'Confirm' },
+		],
+		'4',
+	)
+	actions.track_figure_size = choiceAction(
+		'Tracking: Close-up Figure Size',
+		[0x0a, 0x0f, 0x01, 0x00],
+		[
+			{ id: '0', label: 'Full Body' },
+			{ id: '1', label: 'Half Body' },
+			{ id: '2', label: 'Close Up' },
+			{ id: '3', label: 'Custom' },
+		],
+		'0',
+	)
+	actions.track_mode = choiceAction(
+		'Tracking: Mode',
+		[0x0a, 0x01, 0x04, 0x1c],
+		[
+			{ id: '3', label: 'Tracking' },
+			{ id: '4', label: 'Region' },
+			{ id: '5', label: 'Frame' },
+		],
+		'3',
+	)
 	actions.voice_tracking = onOff('Voice Tracking', [0x0b, 0x02, 0x10])
 
 	return actions

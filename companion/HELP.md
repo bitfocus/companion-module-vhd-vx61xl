@@ -12,7 +12,8 @@ V63XL, V60XS, V61XS and V63XS.
 - **VISCA address**: 1 by default (matches the camera's factory default).
 
 The connection status is also available as the variable
-`$(vhd-vx61xl:connection_status)`.
+`$(<connection label>:connection_status)`, where the label is the name shown
+in the Connections list (`vx61xl` by default).
 
 ## Where these commands come from
 

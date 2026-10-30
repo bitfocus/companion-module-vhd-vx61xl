@@ -30,6 +30,8 @@ class VX61XLInstance extends InstanceBase {
 
 	async configUpdated(config) {
 		this.config = config
+		// Presets contain the connection label, so send them again.
+		this.setPresetDefinitions(getPresetDefinitions(this))
 		this.destroyConnection()
 		this.initConnection()
 	}
@@ -108,6 +110,7 @@ class VX61XLInstance extends InstanceBase {
 			this.badConfig = true
 			this.setConnected(false)
 			this.updateStatus(InstanceStatus.BadConfig, 'No camera IP configured')
+			this.setVariableValues({ connection_status: 'No camera IP configured' })
 			return
 		}
 		this.badConfig = false
@@ -180,12 +183,13 @@ class VX61XLInstance extends InstanceBase {
 	sendBuffer(buf) {
 		if (!this.socket || !this.connected) {
 			this.log('warn', 'Not connected, dropping command: ' + buf.toString('hex'))
-			return
+			return false
 		}
 		this.log('debug', 'TX: ' + buf.toString('hex'))
 		this.socket.write(buf, (err) => {
 			if (err) this.log('error', 'Write failed: ' + err.message)
 		})
+		return true
 	}
 
 	get viscaAddress() {
